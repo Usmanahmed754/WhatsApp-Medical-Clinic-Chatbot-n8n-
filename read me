@@ -1,0 +1,54 @@
+Overview
+This workflow lets patients interact with the clinic via WhatsApp to:
+
+View clinic information (timings, location, appointment booking instructions)
+See available doctors
+Browse offered services
+Ask FAQs
+Ask free-form questions, answered conversationally by an AI agent
+
+Replies are sent as interactive WhatsApp list messages, with content pulled live from a Google Sheet and formatted into natural language by an LLM.
+How It Works
+
+Webhook — Receives incoming WhatsApp messages/button clicks from Meta's Cloud API.
+Dedupe Check / Skip If Duplicate — Prevents duplicate processing when WhatsApp resends the same webhook event.
+If — Filters out non-message events (e.g. delivery/read receipts).
+Edit Fields1 — Extracts key fields (sender number, message text, button/list reply ID) from the raw payload.
+If1 — Validates the extracted data before routing.
+Switch (Rules) — Routes the request based on intent:
+
+Clinic_Info — clinic details
+Show_FAQ_Menu — triggered by typing "hi"
+Doctors — doctor list
+Services — services list
+FAQ — FAQ button
+Fallback — anything unmatched, sent straight to the AI agent
+
+
+Edit Fields (5/3/7/6/plain) — Sets which Google Sheet category to query for each intent.
+Get row(s) in sheet — Fetches the relevant data from Google Sheets.
+Aggregate — Combines multiple rows into a single dataset.
+AI Agent (Google Gemini / Groq) — Converts the raw data (or, for Fallback, the user's free-text question) into a natural, formatted WhatsApp reply.
+Edit Fields2 — Builds the final WhatsApp Cloud API JSON payload (interactive list message format).
+HTTP Request — Sends the formatted message back to the user via Meta's Graph API.
+
+Tech Stack
+
+n8n — workflow orchestration
+WhatsApp Business Cloud API (Meta Graph API) — messaging channel
+Google Sheets — content/data source (doctors, services, clinic info, FAQs)
+Google Gemini / Groq — LLM for natural-language response generation
+
+Setup
+
+Import the workflow JSON into your n8n instance.
+Connect your WhatsApp Business Cloud API credentials to the Webhook and HTTP Request nodes.
+Connect your Google Sheets credentials to "Get row(s) in sheet."
+Add your Google Gemini and/or Groq API credentials to the AI Agent node.
+Update the Google Sheet with your clinic's doctors, services, clinic info, and FAQ content.
+Activate the workflow.
+
+Notes
+
+WhatsApp list-reply IDs (clinic_information, doctors, services, faq) must match exactly what's configured in the Switch node rules.
+The AI Agent's system prompt controls response formatting (bold headings via *text*, line breaks between sections).
